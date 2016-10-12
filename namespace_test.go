@@ -1,6 +1,7 @@
 package ctxvfs
 
 import (
+	"context"
 	"reflect"
 	"sort"
 	"testing"
@@ -50,21 +51,43 @@ func TestNameSpace_merge(t *testing.T) {
 	t1.Bind("/d", Map(map[string][]byte{"file1": []byte("1")}), "/", BindAfter)
 	t1.Bind("/d", Map(map[string][]byte{"file2": []byte("2")}), "/", BindAfter)
 
-	fis, err := t1.ReadDir(nil, "/d")
+	names, err := readDirNames(t1, nil, "/d")
 	if err != nil {
 		t.Fatal(err)
 	}
+	if wantNames := []string{"file1", "file2"}; !reflect.DeepEqual(names, wantNames) {
+		t.Errorf("got names %v, want %v", names, wantNames)
+	}
+}
 
-	wantNames := []string{"file1", "file2"}
+func TestNameSpace_merge_differentNewPaths(t *testing.T) {
+	t1 := NameSpace{}
+
+	// TODO(sqs): If the order of these lines is reversed, only file2
+	// is returned. The order should not matter.
+	t1.Bind("/", Map(map[string][]byte{"d/file1": []byte("1")}), "/", BindAfter)
+	t1.Bind("/d", Map(map[string][]byte{"file2": []byte("2")}), "/", BindAfter)
+
+	names, err := readDirNames(t1, nil, "/d")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if wantNames := []string{"file1", "file2"}; !reflect.DeepEqual(names, wantNames) {
+		t.Errorf("got names %v, want %v", names, wantNames)
+	}
+}
+
+func readDirNames(fs FileSystem, ctx context.Context, dir string) ([]string, error) {
+	fis, err := fs.ReadDir(ctx, dir)
+	if err != nil {
+		return nil, err
+	}
 	names := make([]string, len(fis))
 	for i, fi := range fis {
 		names[i] = fi.Name()
 	}
-	sort.Strings(wantNames)
 	sort.Strings(names)
-	if !reflect.DeepEqual(names, wantNames) {
-		t.Errorf("got names %v, want %v", names, wantNames)
-	}
+	return names, nil
 }
 
 func TestNameSpace_ancestorDirs(t *testing.T) {
