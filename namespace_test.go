@@ -1,6 +1,8 @@
 package ctxvfs
 
 import (
+	"reflect"
+	"sort"
 	"testing"
 	"time"
 )
@@ -40,6 +42,28 @@ func TestNameSpace(t *testing.T) {
 	}
 	if !fi.ModTime().IsZero() {
 		t.Errorf("t2.Modime() : want:%v got:%v", time.Time{}, fi.ModTime())
+	}
+}
+
+func TestNameSpace_merge(t *testing.T) {
+	t1 := NameSpace{}
+	t1.Bind("/d", Map(map[string][]byte{"file1": []byte("1")}), "/", BindAfter)
+	t1.Bind("/d", Map(map[string][]byte{"file2": []byte("2")}), "/", BindAfter)
+
+	fis, err := t1.ReadDir(nil, "/d")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	wantNames := []string{"file1", "file2"}
+	names := make([]string, len(fis))
+	for i, fi := range fis {
+		names[i] = fi.Name()
+	}
+	sort.Strings(wantNames)
+	sort.Strings(names)
+	if !reflect.DeepEqual(names, wantNames) {
+		t.Errorf("got names %v, want %v", names, wantNames)
 	}
 }
 
