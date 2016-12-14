@@ -2,6 +2,9 @@ package ctxvfs
 
 import (
 	"context"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"reflect"
 	"sort"
 	"testing"
@@ -113,5 +116,31 @@ func TestNameSpace_ancestorDirs(t *testing.T) {
 		if fi.Mode().IsDir() != test.wantIsDir {
 			t.Errorf("Stat(%q): got IsDir %v, want %v", test.path, fi.Mode().IsDir(), test.wantIsDir)
 		}
+	}
+}
+
+func TestNameSpace_localFSOnWindows(t *testing.T) {
+
+	tmpDir, err := ioutil.TempDir("", "ctxvfs-localfs")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmpDir)
+	if err = os.MkdirAll(tmpDir, 0700); err != nil {
+		t.Fatal(err)
+	}
+	file := filepath.Join(tmpDir, "foo")
+	if err = ioutil.WriteFile(file, []byte("bar"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	mfs := Map(map[string][]byte{"a/b.txt": []byte("c")})
+	fs := NameSpace{}
+	fs.Bind("/", mfs, "/", BindBefore)
+	fs.Bind("", OS(""), "", BindAfter)
+
+	_, err = fs.Open(nil, file)
+	if err != nil {
+		t.Errorf("Cannot read local file (%s)", err)
 	}
 }
