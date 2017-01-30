@@ -8,21 +8,29 @@ package ctxvfs
 
 import (
 	"errors"
-	"os"
 	"path/filepath"
 	"strings"
 )
 
 var errInvalidPath = errors.New("Cannot resolve absolute path")
+var errOuterPath = errors.New("path is not located under the mount root")
 
 func (root osFS) resolve(path string) (string, error) {
-	// Clean the path so that it cannot possibly begin with ../.
-	// If it did, the result of filepath.Join would be outside the
-	// tree rooted at root.  We probably won't ever see a path
-	// with .. in it, but be safe anyway.
-	path = strings.TrimPrefix(filepath.Clean(filepath.Join(string(root), path)), string(os.PathSeparator))
-	if !filepath.IsAbs(path) {
-		return "", errInvalidPath
+	base := filepath.Clean(strings.TrimPrefix(filepath.FromSlash(string(root)), "\\") + "\\")
+	if base == "\\" {
+		base = ""
+	}
+	path = strings.TrimPrefix(filepath.FromSlash(path), "\\")
+	if filepath.IsAbs(path) {
+		path = filepath.Clean(path)
+	} else {
+		path = filepath.Clean(filepath.Join(base, path))
+		if !filepath.IsAbs(path) {
+			return "", errInvalidPath
+		}
+	}
+	if !strings.HasPrefix(strings.ToLower(path), strings.ToLower(base)) {
+		return "", errOuterPath
 	}
 	return path, nil
 }
