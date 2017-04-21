@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	pathpkg "path"
+	"path/filepath"
 	"sort"
 	"strings"
 )
@@ -36,14 +37,14 @@ type mountedFS struct {
 
 // hasPathPrefix returns true if x == y or x == y + "/" + more
 func hasPathPrefix(x, y string) bool {
-	return x == y || strings.HasPrefix(x, y) && (strings.HasSuffix(y, "/") || strings.HasPrefix(x[len(y):], "/"))
+	return y == "" || x == y || strings.HasPrefix(x, y) && (strings.HasSuffix(y, "/") || strings.HasPrefix(x[len(y):], "/"))
 }
 
 // translate translates path for use in m, replacing old with new.
 //
 // mountedFS{"/src/pkg", fs, "/src"}.translate("/src/pkg/code") == "/src/code".
 func (m mountedFS) translate(path string) string {
-	path = pathpkg.Clean("/" + path)
+	path = cleanPath(path)
 	if !hasPathPrefix(path, m.old) {
 		panic("translate " + path + " but old=" + m.old)
 	}
@@ -71,11 +72,17 @@ func (ns NameSpace) Fprint(w io.Writer) {
 	fmt.Fprint(w, "}\n")
 }
 
-// clean returns a cleaned, rooted path for evaluation.
+// cleanPath returns a cleaned, rooted path for evaluation.
 // It canonicalizes the path so that we can use string operations
 // to analyze it.
-func (NameSpace) clean(path string) string {
-	return pathpkg.Clean("/" + path)
+func cleanPath(path string) string {
+	path = filepath.ToSlash(path)
+	switch {
+	case path == "" || filepath.IsAbs(path):
+		return path
+	default:
+		return pathpkg.Clean("/" + path)
+	}
 }
 
 type BindMode int
@@ -87,8 +94,8 @@ const (
 )
 
 func (ns NameSpace) Bind(old string, newfs FileSystem, new string, mode BindMode) {
-	old = ns.clean(old)
-	new = ns.clean(new)
+	old = cleanPath(old)
+	new = cleanPath(new)
 	m := mountedFS{old, newfs, new}
 	var mtpt []mountedFS
 	switch mode {
@@ -122,20 +129,26 @@ func (ns NameSpace) Bind(old string, newfs FileSystem, new string, mode BindMode
 
 // resolve resolves a path to the list of mountedFS to use for path.
 func (ns NameSpace) resolve(path string) []mountedFS {
-	path = ns.clean(path)
+	path = cleanPath(path)
+	volume := filepath.VolumeName(path)
+	results := make([]mountedFS, 0)
 	for {
 		if m := ns[path]; m != nil {
 			if debugNS {
 				fmt.Printf("resolve %s: %v\n", path, m)
 			}
-			return m
+			results = append(results, m...)
 		}
-		if path == "/" {
+		if path == "" {
 			break
 		}
-		path = pathpkg.Dir(path)
+		if path == volume || path == "/" {
+			path = ""
+		} else {
+			path = pathpkg.Dir(path)
+		}
 	}
-	return nil
+	return results
 }
 
 func (ns NameSpace) Open(ctx context.Context, path string) (ReadSeekCloser, error) {
@@ -198,7 +211,7 @@ func (ns NameSpace) Lstat(ctx context.Context, path string) (os.FileInfo, error)
 }
 
 func (ns NameSpace) ReadDir(ctx context.Context, path string) ([]os.FileInfo, error) {
-	path = ns.clean(path)
+	path = cleanPath(path)
 
 	var (
 		haveName = map[string]bool{}

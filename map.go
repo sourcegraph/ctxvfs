@@ -54,8 +54,8 @@ func (fs mapFS) Open(ctx context.Context, p string) (ReadSeekCloser, error) {
 }
 
 func (fs mapFS) Lstat(ctx context.Context, p string) (os.FileInfo, error) {
-	if p == "/" {
-		return dirInfo("/"), nil
+	if p == "/" || p == "" {
+		return dirInfo(p), nil
 	}
 	p = filename(p)
 	b, ok := fs[p]
@@ -88,7 +88,7 @@ func (fs mapFS) Stat(ctx context.Context, p string) (os.FileInfo, error) {
 // with a slash to be in the root.
 func slashdir(p string) string {
 	d := path.Dir(p)
-	if d == "." || d == "/" {
+	if d == "." || d == "/" || d == "" {
 		return "/"
 	}
 	if strings.HasPrefix(p, "/") {
@@ -98,10 +98,11 @@ func slashdir(p string) string {
 }
 
 func (fs mapFS) ReadDir(ctx context.Context, p string) ([]os.FileInfo, error) {
-	p = path.Clean(p)
-	if !strings.HasPrefix(p, "/") {
-		p = "/" + p
+	p = cleanPath(p)
+	if p == "" {
+		p = "/"
 	}
+
 	var ents []string
 	fim := make(map[string]os.FileInfo) // base -> fi
 	for fn, b := range fs {
