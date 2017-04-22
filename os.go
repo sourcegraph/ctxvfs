@@ -30,6 +30,13 @@ type osFS string
 func (root osFS) String() string { return "os(" + string(root) + ")" }
 
 func (root osFS) resolve(path string) string {
+	// We special case "" to mean the OS root filesystem. We do this so on
+	// windows we can have a VFS which allows access to /C:/foo, /D:/foo,
+	// etc.
+	if root == "" {
+		return path
+	}
+
 	// Clean the path so that it cannot possibly begin with ../.
 	// If it did, the result of filepath.Join would be outside the
 	// tree rooted at root.  We probably won't ever see a path
