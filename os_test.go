@@ -6,9 +6,9 @@ package ctxvfs
 
 import (
 	"io/ioutil"
-	"strings"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
