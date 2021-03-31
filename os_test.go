@@ -5,16 +5,15 @@
 package ctxvfs
 
 import (
-	"io/ioutil"
-	"strings"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
 func TestOpenLocal(t *testing.T) {
 
-	tmpDir, err := ioutil.TempDir("", "vfs-localfs")
+	tmpDir, err := os.MkdirTemp("", "vfs-localfs")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -23,7 +22,7 @@ func TestOpenLocal(t *testing.T) {
 		t.Fatal(err)
 	}
 	file := filepath.Join(tmpDir, "foo")
-	if err = ioutil.WriteFile(file, []byte("bar"), 0600); err != nil {
+	if err = os.WriteFile(file, []byte("bar"), 0600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -64,7 +63,7 @@ func TestOpenLocal(t *testing.T) {
 
 func TestOpenOverlay(t *testing.T) {
 
-	tmpDir, err := ioutil.TempDir("", "vfs-localfs")
+	tmpDir, err := os.MkdirTemp("", "vfs-localfs")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,7 +72,7 @@ func TestOpenOverlay(t *testing.T) {
 		t.Fatal(err)
 	}
 	file := filepath.Join(tmpDir, "foo")
-	if err = ioutil.WriteFile(file, []byte("bar"), 0600); err != nil {
+	if err = os.WriteFile(file, []byte("bar"), 0600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -89,7 +88,7 @@ func TestOpenOverlay(t *testing.T) {
 	if err != nil {
 		t.Errorf("Cannot read overlayed file (%s)", err)
 	}
-	content, err := ioutil.ReadAll(stream)
+	content, err := io.ReadAll(stream)
 	if err != nil {
 		t.Errorf("Cannot read overlayed file (%s)", err)
 	}

@@ -6,7 +6,6 @@ package ctxvfs
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"reflect"
 	"testing"
@@ -37,7 +36,7 @@ func TestMap_openRoot(t *testing.T) {
 			t.Errorf("Open(%q) = %v", tt.path, err)
 			continue
 		}
-		slurp, err := ioutil.ReadAll(rsc)
+		slurp, err := io.ReadAll(rsc)
 		if err != nil {
 			t.Error(err)
 		}
