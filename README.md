@@ -1,4 +1,4 @@
-# ctxvfs [![Build Status](https://travis-ci.org/sourcegraph/ctxvfs.svg)](https://travis-ci.org/sourcegraph/ctxvfs)
+# ctxvfs
 
 Package ctxvfs defines a virtual file system interface whose methods accept a context.Context parameter. It is otherwise similar to vfs.FileSystem.
 

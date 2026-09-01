@@ -6,7 +6,6 @@ package ctxvfs
 import (
 	"context"
 	"io"
-	"io/ioutil"
 	"os"
 )
 
@@ -34,5 +33,5 @@ func ReadFile(ctx context.Context, fs FileSystem, path string) ([]byte, error) {
 		return nil, err
 	}
 	defer rc.Close()
-	return ioutil.ReadAll(rc)
+	return io.ReadAll(rc)
 }

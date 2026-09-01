@@ -20,10 +20,10 @@ import (
 // It differs from golang.org/x/tools/godoc/vfs/mapfs in the following
 // ways:
 //
-// * It uses []byte instead of string to hold file contents. This
-//   means that callers must synchronize writes (if any) to the byte
-//   arrays.
-// * It implements ctxvfs.FileSystem, not vfs.FileSystem.
+//   - It uses []byte instead of string to hold file contents. This
+//     means that callers must synchronize writes (if any) to the byte
+//     arrays.
+//   - It implements ctxvfs.FileSystem, not vfs.FileSystem.
 func Map(m map[string][]byte) FileSystem {
 	for k := range m {
 		if strings.HasPrefix(k, "/") {

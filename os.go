@@ -7,7 +7,6 @@ package ctxvfs
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 )
 
@@ -69,5 +68,17 @@ func (root osFS) ReadDir(ctx context.Context, path string) ([]os.FileInfo, error
 	if err != nil {
 		return nil, err
 	}
-	return ioutil.ReadDir(resolved) // is sorted
+	entries, err := os.ReadDir(resolved) // is sorted
+	if err != nil {
+		return nil, err
+	}
+	fis := make([]os.FileInfo, len(entries))
+	for i, e := range entries {
+		fi, err := e.Info()
+		if err != nil {
+			return nil, err
+		}
+		fis[i] = fi
+	}
+	return fis, nil
 }
